@@ -20,7 +20,7 @@ async def autoapprove(client: Client, message: ChatJoinRequest):
     print(f"{user.first_name} Joined")
     if APPROVED:
         await client.approve_chat_join_request(chat_id=chat.id, user_id=user.id)
-        await client.send_message(chat_id=chat.id, text=TEXT.format(user.mention, chat.title))
+        await client.send_message(chat_id=message.chat.id, text=TEXT.format(user.mention, chat.title))
 
 # enable/disable auto approve feature
 @app.on_message(filters.command("autoapprove") & filters.private)
