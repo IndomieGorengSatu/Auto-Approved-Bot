@@ -1,60 +1,49 @@
-# MIT License
-
-# Copyright (c) 2022 Muhammed
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-# Telegram Link : https://telegram.dog/Mo_Tech_Group
-# Repo Link : https://github.com/PR0FESS0R-99/Auto-Approved-Bot
-# License Link : https://github.com/PR0FESS0R-99/Auto-Approved-Bot/blob/Auto-Approved-Bot/LICENSE
-
-from os import environ
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, User, ChatJoinRequest
+from pyrogram.types import *
+import os
 
-pr0fess0r_99=Client(
-    "Auto Approved Bot",
-    bot_token = environ["BOT_TOKEN"],
-    api_id = int(environ["API_ID"]),
-    api_hash = environ["API_HASH"]
-)
+CHAT_ID = os.getenv("CHAT_ID")
+API_ID = os.getenv("API_ID")
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-CHAT_ID = [int(pr0fess0r_99) for pr0fess0r_99 in environ.get("CHAT_ID", None).split()]
-TEXT = environ.get("APPROVED_WELCOME_TEXT", "Hello {mention}\nWelcome To {title}\n\nYour Auto Approved")
-APPROVED = environ.get("APPROVED_WELCOME", "on").lower()
+app = Client(bot_token=BOT_TOKEN, api_id=API_ID, api_hash=API_HASH)
 
-@pr0fess0r_99.on_message(filters.private & filters.command(["start"]))
-async def start(client: pr0fess0r_99, message: Message):
-    approvedbot = await client.get_me() 
-    button = [[ InlineKeyboardButton("📦 Repo", url="https://github.com/PR0FESS0R-99/Auto-Approved-Bot"), InlineKeyboardButton("Updates 📢", url="t.me/Mo_Tech_YT") ],
-              [ InlineKeyboardButton("➕️ Add Me To Your Chat ➕️", url=f"http://t.me/{approvedbot.username}?startgroup=botstart") ]]
-    await client.send_message(chat_id=message.chat.id, text=f"**__Hello {message.from_user.mention} Iam Auto Approver Join Request Bot Just [Add Me To Your Group Channnl](http://t.me/{approvedbot.username}?startgroup=botstart) || Repo https://github.com/PR0FESS0R-99/Auto-Approved-Bot||**__", reply_markup=InlineKeyboardMarkup(button), disable_web_page_preview=True)
+TEXT = "Hello {}, Welcome To {}"
+APPROVED = True  # set to True by default
 
-@pr0fess0r_99.on_chat_join_request((filters.group | filters.channel) & filters.chat(CHAT_ID) if CHAT_ID else (filters.group | filters.channel))
-async def autoapprove(client: pr0fess0r_99, message: ChatJoinRequest):
-    chat=message.chat # Chat
-    user=message.from_user # User
-    print(f"{user.first_name} Joined 🤝") # Logs
-    await client.approve_chat_join_request(chat_id=chat.id, user_id=user.id)
-    if APPROVED == "on":
-        await client.send_message(chat_id=chat.id, text=TEXT.format(mention=user.mention, title=chat.title))
-    #   print("Welcome....")
+# auto approve members 
+@app.on_chat_join_request((filters.group | filters.channel) & filters.chat(CHAT_ID) if CHAT_ID else (filters.group | filters.channel))
+async def autoapprove(client: Client, message: ChatJoinRequest):
+    chat = message.chat
+    user = message.from_user
+    print(f"{user.first_name} Joined")
+    if APPROVED:
+        await client.approve_chat_join_request(chat_id=chat.id, user_id=user.id)
+        await client.send_message(chat_id=chat.id, text=TEXT.format(user.mention, chat.title))
+
+# enable/disable auto approve feature
+@app.on_message(filters.command("autoapprove") & filters.private)
+async def toggle_autoapprove(client: Client, message: Message):
+    chat = message.chat
+    user_id = message.from_user.id
+    member = await client.get_chat_member(chat_id=chat.id, user_id=user_id)
+    if member.can_manage_chat:
+        if len(message.command) > 1:
+            action = message.command[1].lower()
+            if action == "on":
+                APPROVED = True
+                await message.reply("Auto approve is now enabled.")
+            elif action == "off":
+                APPROVED = False
+                await message.reply("Auto approve is now disabled.")
+            else:
+                await message.reply("Invalid argument. Use 'on' or 'off'.")
+        else:
+            await message.reply(f"Auto approve is currently {'enabled' if APPROVED else 'disabled'}. Use 'on' or 'off' to toggle.")
+    else:
+        await message.reply("Only group admins can enable or disable auto approve.")
+
 
 print("Auto Approved Bot")
-pr0fess0r_99.run()
+app.run()
