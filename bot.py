@@ -13,12 +13,6 @@ CHAT_ID = [int(pr0fess0r_99) for pr0fess0r_99 in environ.get("CHAT_ID", None).sp
 TEXT = environ.get("APPROVED_WELCOME_TEXT", "Hello {mention}\nWelcome To {title}\n\nYour Auto Approved")
 APPROVED = environ.get("APPROVED_WELCOME", "on").lower()
 
-
-def send_welcome_message(client: Client, user_id: int):
-    text = "Hello {mention}\nWelcome To {title}\n\nYour Auto Approved"
-    client.send_message(chat_id=user_id, text=text)
-
-
 @pr0fess0r_99.on_message(filters.private & filters.command(["start"]))
 async def start(client: pr0fess0r_99, message: Message):
     approvedbot = await client.get_me() 
@@ -33,7 +27,7 @@ async def autoapprove(client: pr0fess0r_99, message: ChatJoinRequest):
     print(f"{user.first_name} Joined 🤝") # Logs
     await client.approve_chat_join_request(chat_id=chat.id, user_id=user.id)
     if APPROVED == "on":
-        await send_welcome_message(client, chat_id=user.id, text=TEXT.format(mention=user.mention, title=chat.title))
+        await client.send_message(chat_id=user.id, text=TEXT.format(mention=user.mention, title=chat.title))
     #   print("Welcome....")
 
 print("Auto Approved Bot")
